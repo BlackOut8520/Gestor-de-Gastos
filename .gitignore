@@ -1,0 +1,14 @@
+# Ignorar carpetas de dependencias
+/node_modules
+/client/node_modules
+/server/node_modules
+
+# Ignorar logs, builds, etc.
+/dist
+/build
+.env
+.DS_Store
+
+# Vercel/Render logs (si aplica)
+.vercel
+.render

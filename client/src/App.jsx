@@ -1,0 +1,265 @@
+import { useState, useEffect } from 'react'
+import TransactionForm from './components/TransactionForm'
+import { Balance } from './components/Balance'
+import { IncomeExpenses } from './components/IncomeExpenses'
+import { ExpenseChart } from './components/ExpenseChart'
+import { Login } from './components/Login'
+import { ComparisonChart } from './components/ComparisonChart'
+import './App.css'
+
+function App() {
+  // 1. ESTADOS DE AUTENTICACIÓN
+  const [token, setToken] = useState(localStorage.getItem('auth-token') || '');
+  // Estado para el nombre del usuario (Leemos del localStorage o ponemos 'Usuario' por defecto)
+  const [username, setUsername] = useState(localStorage.getItem('auth-user') || 'Usuario');
+
+  // ESTADOS DE VISTA
+  const [chartView, setChartView] = useState('expense'); // 'expense' | 'comparison'
+  const [historyFilter, setHistoryFilter] = useState('all'); // 'all' | 'ingreso' | 'gasto'
+  
+  // DATOS
+  const [transactions, setTransactions] = useState([])
+  const [globalBalance, setGlobalBalance] = useState(0) 
+  
+  // MODALES
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [transactionToDelete, setTransactionToDelete] = useState(null);
+
+  const [dateRange, setDateRange] = useState({
+    from: new Date().toISOString().split('T')[0].substring(0, 8) + '01', 
+    to: new Date().toISOString().split('T')[0] 
+  })
+
+  // --- LOGOUT ---
+  const handleLogout = () => {
+    setToken('');
+    localStorage.removeItem('auth-token');
+    
+    // Limpiamos también el usuario
+    localStorage.removeItem('auth-user');
+    setUsername('Usuario');
+
+    setTransactions([]);
+    setGlobalBalance(0);
+  }
+
+  // --- LOGIN SUCCESS ---
+  const handleLoginSuccess = (newToken) => {
+    localStorage.setItem('auth-token', newToken);
+    setToken(newToken);
+    
+    // Al entrar, leemos inmediatamente el nombre que guardó el Login.jsx
+    const savedName = localStorage.getItem('auth-user');
+    if (savedName) {
+        setUsername(savedName);
+    }
+  };
+
+  // --- FETCHERS ---
+  const fetchGlobalBalance = (endDate) => {
+    if (!token) return;
+    const cutOffDate = endDate || dateRange.to;
+    fetch(`http://localhost:4000/api/transactions/summary?date=${cutOffDate}`, { headers: { 'auth-token': token } })
+      .then(res => { if(!res.ok) throw new Error("Error"); return res.json(); })
+      .then(data => setGlobalBalance(data.balance))
+      .catch(err => console.error(err));
+  }
+
+  const refreshData = () => {
+    if (!token) return;
+    const url = `http://localhost:4000/api/transactions?from=${dateRange.from}&to=${dateRange.to}`;
+    fetch(url, { headers: { 'auth-token': token } })
+      .then(res => { if (res.status === 401) { handleLogout(); return []; } return res.json(); })
+      .then(data => { if(Array.isArray(data)) setTransactions(data); })
+      .catch(err => console.error(err)); 
+    fetchGlobalBalance(dateRange.to);
+  }
+
+  useEffect(() => { if (token) refreshData(); }, [dateRange, token])
+  useEffect(() => { if (token) fetchGlobalBalance(); }, [token])
+
+  // --- HANDLERS ---
+  const confirmDelete = async () => {
+    if (!transactionToDelete) return;
+    try {
+        const res = await fetch(`http://localhost:4000/api/transactions/${transactionToDelete}`, {
+            method: 'DELETE', headers: { 'auth-token': token }
+        });
+        if (res.ok) {
+            setTransactions(transactions.filter(t => t._id !== transactionToDelete));
+            fetchGlobalBalance(dateRange.to);
+            setIsDeleteModalOpen(false); setTransactionToDelete(null);
+        } else { alert("Error al borrar."); }
+    } catch (error) { console.error(error); }
+  }
+
+  const handleTogglePaid = async (transaction) => {
+    try {
+        const updatedStatus = !transaction.isPaid;
+        const res = await fetch(`http://localhost:4000/api/transactions/${transaction._id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'auth-token': token },
+            body: JSON.stringify({ isPaid: updatedStatus }) 
+        });
+
+        if (res.ok) {
+            setTransactions(transactions.map(t => 
+                t._id === transaction._id ? { ...t, isPaid: updatedStatus } : t
+            ));
+        }
+    } catch (error) { console.error("Error toggling paid:", error); }
+  }
+
+  const handleTransactionUpdate = () => { refreshData(); setIsModalOpen(false); setEditingTransaction(null); }
+  const handleEditClick = (t) => { setEditingTransaction(t); setIsModalOpen(true); }
+  const handleNewClick = () => { setEditingTransaction(null); setIsModalOpen(true); }
+  const handleDeleteClick = (id) => { setTransactionToDelete(id); setIsDeleteModalOpen(true); }
+  const handleDateChange = (e) => { setDateRange({ ...dateRange, [e.target.name]: e.target.value }) }
+
+  if (!token) return <Login onLogin={handleLoginSuccess} />;
+
+  // --- FILTRADO ---
+  const filteredTransactions = transactions
+    .filter(t => {
+        if (historyFilter === 'all') return true;
+        return t.type === historyFilter;
+    })
+    .sort((a,b) => new Date(b.date) - new Date(a.date));
+
+  return (
+    <div className="bento-container">
+      
+      {/* 1. SIDEBAR */}
+      <aside className="bento-box area-nav">
+        <div>
+          <h1 className="app-title">BlackOut Systems</h1>
+          
+          {/* HEADER DEL SIDEBAR: SALUDO + LOGOUT */}
+          <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px'}}>
+             <p className="user-greet" style={{marginBottom:0}}>
+                Bienvenido, <strong>{username}</strong> 👋
+             </p>
+             
+             <button 
+                onClick={handleLogout} 
+                className="btn-logout" 
+                style={{width:'auto', padding:'6px 10px', fontSize:'0.75rem', height:'fit-content'}}
+             >
+                Salir
+             </button>
+          </div>
+
+          <div className="control-group">
+            <button className="btn-bento-primary" onClick={handleNewClick}><span>+</span> Nueva Transacción</button>
+          </div>
+          <div className="control-group">
+             <label>Periodo Actual</label>
+             <input type="date" name="from" value={dateRange.from} onChange={handleDateChange} />
+             <input type="date" name="to" value={dateRange.to} onChange={handleDateChange} />
+          </div>
+          <div className="control-group">
+             <label>Resumen Mensual</label>
+             <IncomeExpenses transactions={transactions} />
+          </div>
+        </div>
+      </aside>
+
+      {/* 2. BALANCE */}
+      <section className={`bento-box area-balance ${globalBalance < 0 ? 'balance-danger' : globalBalance > 0 ? 'balance-success' : ''}`}>
+         <Balance transactions={transactions} globalBalance={globalBalance} />
+      </section>
+
+      {/* 3. GRÁFICA */}
+      <section className="bento-box area-chart">
+        <div className="box-header">
+           <h3>Análisis Visual</h3>
+           <div className="chart-toggle">
+              <button className={chartView === 'expense' ? 'active' : ''} onClick={() => setChartView('expense')}>Pastel</button>
+              <button className={chartView === 'comparison' ? 'active' : ''} onClick={() => setChartView('comparison')}>Barras</button>
+           </div>
+        </div>
+        <div style={{ flex: 1, minHeight: 0 }}>
+           {chartView === 'expense' ? <ExpenseChart transactions={transactions} /> : <ComparisonChart transactions={transactions} />}
+        </div>
+      </section>
+
+      {/* 4. HISTORIAL */}
+      <section className="bento-box area-history">
+        <div className="box-header">
+           <h3>Movimientos</h3>
+           <div className="history-tabs">
+              <button className={historyFilter === 'all' ? 'tab-active' : ''} onClick={() => setHistoryFilter('all')}>Todo</button>
+              <button className={historyFilter === 'ingreso' ? 'tab-active' : ''} onClick={() => setHistoryFilter('ingreso')}>Ingresos</button>
+              <button className={historyFilter === 'gasto' ? 'tab-active' : ''} onClick={() => setHistoryFilter('gasto')}>Gastos</button>
+           </div>
+        </div>
+        
+        <div className="transactions-feed">
+           {filteredTransactions.length === 0 ? (
+             <p style={{textAlign:'center', color:'#999', marginTop:'40px'}}>
+                No hay {historyFilter === 'all' ? 'movimientos' : historyFilter === 'ingreso' ? 'ingresos' : 'gastos'} registrados.
+             </p>
+           ) : (
+             filteredTransactions.map(t => (
+               <div key={t._id} className={`transaction-item ${t.isPaid ? 'paid-item' : ''}`}>
+                  <div style={{display:'flex', alignItems:'center'}}>
+                    <div className="t-icon">{t.type === 'ingreso' ? '💰' : '💸'}</div>
+                    <div className="t-details">
+                       <span className="t-desc">
+                           {t.description}
+                           {t.isPaid && <span className="paid-badge">PAGADO</span>}
+                       </span>
+                       <span className="t-sub">{t.date} • {t.category}</span>
+                    </div>
+                  </div>
+                  <div style={{textAlign:'right'}}>
+                     <div className={`t-amount ${t.type === 'ingreso' ? 'plus' : 'minus'}`}>
+                        {t.type === 'ingreso' ? '+' : '-'}${Math.abs(t.amount)}
+                     </div>
+                     <div className="mini-actions">
+                        <button 
+                            onClick={() => handleTogglePaid(t)} 
+                            title={t.isPaid ? "Marcar pendiente" : "Marcar pagado"}
+                            style={{ color: t.isPaid ? '#3b82f6' : '#9ca3af' }}
+                        >
+                            {t.isPaid ? '✅' : '☑️'}
+                        </button>
+                        <button onClick={() => handleEditClick(t)} title="Editar">✏️</button>
+                        <button onClick={() => handleDeleteClick(t._id)} title="Borrar" style={{color:'#ef4444'}}>🗑️</button>
+                     </div>
+                  </div>
+               </div>
+             ))
+           )}
+        </div>
+      </section>
+
+      {/* MODALES */}
+      {isModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="btn-close-modal" onClick={() => setIsModalOpen(false)}>✖</button>
+            <TransactionForm onTransactionAdded={handleTransactionUpdate} editingTransaction={editingTransaction} token={token} />
+          </div>
+        </div>
+      )}
+
+      {isDeleteModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsDeleteModalOpen(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{maxWidth: '400px'}}>
+             <h3>⚠️ Confirmar</h3>
+             <div className="modal-body"><p>¿Eliminar este movimiento?</p></div>
+             <div className="modal-actions">
+                <button className="btn-cancel" onClick={() => setIsDeleteModalOpen(false)}>Cancelar</button>
+                <button className="btn-delete-confirm" onClick={confirmDelete}>Eliminar</button>
+             </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default App
