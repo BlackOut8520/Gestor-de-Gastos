@@ -9,6 +9,7 @@ import { NetFlowChart } from './components/NetFlowChart'
 import AiChat from './components/AiChat'; 
 import { VisualInsight } from './components/VisualInsight'; 
 import './App.css' 
+//Coment redeploy
 
 // --- CONFIGURACIÓN DE LA API ---
 // Usa la variable de Vercel en producción o localhost en desarrollo
