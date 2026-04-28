@@ -16,9 +16,6 @@ export const Login = ({ onLogin }) => {
     const endpoint = isRegistering ? '/api/auth/register' : '/api/auth/login';
     const targetUrl = `${API_BASE_URL}${endpoint}`; // Extraemos la URL final
 
-    // --- EL CHIVATO (Trampa para el celular) ---
-    alert(`ATENCIÓN: Intentando conectar a:\n${targetUrl}`);
-    // ------------------------------------------
 
     try {
       // MODIFICACIÓN: Usamos la variable targetUrl que acabamos de crear
