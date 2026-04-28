@@ -1,43 +1,32 @@
 import React from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-export const ExpenseChart = ({ transactions }) => {
+// 1. Añadimos la prop 'type' con valor por defecto 'gasto'
+export const ExpenseChart = ({ transactions, type = 'gasto' }) => {
+  
+  // 2. Filtramos dinámicamente según el tipo recibido
+  const filteredData = transactions.filter(t => t.type?.toLowerCase() === type);
 
-  // 1. Filtramos solo los GASTOS
-  const expenses = transactions.filter(transaction => transaction.type === 'gasto');
-
-  // 2. Agrupar montos por categoría (Lógica robusta)
-  const categoryTotals = expenses.reduce((acc, transaction) => {
-    const category = transaction.category;
-    const amount = Math.abs(transaction.amount); // Aseguramos positivo
-
-    if (acc[category]) {
-      acc[category] += amount;
-    } else {
-      acc[category] = amount;
-    }
+  const categoryTotals = filteredData.reduce((acc, t) => {
+    const category = t.category;
+    const amount = Math.abs(t.amount);
+    acc[category] = (acc[category] || 0) + amount;
     return acc;
   }, {});
 
-  // 3. Convertir a formato que le gusta a Recharts (Array de objetos)
   const data = Object.keys(categoryTotals).map(key => ({
     name: key,
     value: categoryTotals[key]
-  })).filter(item => item.value > 0); // Solo mostramos si hay dinero gastado
+  })).filter(item => item.value > 0);
 
-  // 4. Paleta de colores base (Puedes agregar más si quieres)
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d', '#ffc658', '#ff6b6b'];
+  // Paleta de colores (se mantiene igual)
+  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
-  // Función para obtener color (si se acaban, recicla)
-  const getColor = (index) => {
-    return COLORS[index % COLORS.length];
-  };
-
-  // Si no hay datos, mostramos mensaje
+  // 3. Mensaje dinámico según el tipo
   if (data.length === 0) {
     return (
-      <div style={{height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af'}}>
-        <p>No hay gastos registrados</p>
+      <div className="flex h-full items-center justify-center text-slate-400 italic">
+        <p>No hay {type === 'ingreso' ? 'ingresos' : 'gastos'} registrados</p>
       </div>
     );
   }
@@ -47,23 +36,22 @@ export const ExpenseChart = ({ transactions }) => {
       <PieChart>
         <Pie
           data={data}
-          cx="50%"
-          cy="50%"
-          labelLine={false}
-          label={({ percent }) => `${(percent * 100).toFixed(0)}%`} // Muestra % dentro
-          outerRadius={80}
-          fill="#8884d8"
-          dataKey="value"
+          cx="50%" cy="50%"
+          innerRadius={65} outerRadius={90}
+          paddingAngle={8} cornerRadius={10}
+          dataKey="value" stroke="none"
         >
           {data.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={getColor(index)} />
+            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
-        <Tooltip formatter={(value) => `$${value}`} />
-        <Legend />
+        <Tooltip 
+          contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px rgba(0,0,0,0.1)' }}
+          // 4. Etiqueta dinámica en el Tooltip
+          formatter={(value) => [`$${value}`, type === 'ingreso' ? 'Ingreso' : 'Gasto']}
+        />
+        <Legend verticalAlign="bottom" iconType="circle" />
       </PieChart>
     </ResponsiveContainer>
   );
 };
-
-export default ExpenseChart;

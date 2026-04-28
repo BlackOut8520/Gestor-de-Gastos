@@ -1,8 +1,8 @@
 /* =========================================
-   1. VARIABLES BENTO & RESET
+   1. VARIABLES BENTO ORIGINALES & RESET
    ========================================= */
 :root {
-  /* Paleta Bento (Estilo Clean/Modern) */
+  /* Paleta Bento Clean/Modern Original */
   --bg-canvas: #f2f4f7;       /* Fondo general */
   --bg-card: #ffffff;         /* Fondo cajas */
   --text-primary: #111827;    /* Negro suave */
@@ -11,8 +11,8 @@
   --danger: #ef4444;          /* Rojo */
   --success: #10b981;         /* Verde */
   
-  /* Dimensiones */
-  --radius: 24px;             /* Bordes redondeados */
+  /* Dimensiones Originales */
+  --radius: 24px;             /* Bordes muy redondeados */
   --gap: 20px;                /* Espacio entre cajas */
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   --border: 1px solid rgba(0,0,0,0.05);
@@ -24,13 +24,11 @@ body {
   background-color: var(--bg-canvas);
   color: var(--text-primary);
   height: 100vh;
-  /* En PC bloqueamos el scroll general para que parezca App, 
-     pero en móvil lo habilitaremos abajo */
-  overflow: hidden; 
+  overflow: hidden; /* Bloqueo de scroll general en PC */
 }
 
 /* =========================================
-   2. LAYOUT GRID (Escritorio)
+   2. LAYOUT GRID (Estructura Original Recuperada)
    ========================================= */
 .bento-container {
   display: grid;
@@ -45,7 +43,7 @@ body {
 }
 
 /* =========================================
-   3. CAJAS BENTO (Estilos Base)
+   3. CAJAS BENTO (Estilos Base Originales)
    ========================================= */
 .bento-box {
   background: var(--bg-card);
@@ -80,7 +78,7 @@ body {
 }
 
 /* =========================================
-   4. ÁREAS DEL GRID (Posicionamiento)
+   4. ÁREAS DEL GRID (Posicionamiento Original + IA)
    ========================================= */
 
 /* Sidebar */
@@ -94,13 +92,14 @@ body {
 .area-balance {
   grid-column: 2 / 4;
   grid-row: 1 / 2;
-  background: linear-gradient(135deg, #1e293b, #0f172a); /* Default: Azul Oscuro */
+  /* Degradado Azul Oscuro Original */
+  background: linear-gradient(135deg, #1e293b, #0f172a); 
   color: white;
   min-height: 160px;
   justify-content: center;
 }
 
-/* Gráfica */
+/* Gráfica Principal */
 .area-chart {
   grid-column: 2 / 3;
   grid-row: 2 / 3;
@@ -113,8 +112,17 @@ body {
   overflow-y: auto; /* Scroll interno */
 }
 
+/* --- NUEVA ÁREA: IA VISUAL INSIGHTS (Simétrica a Gráfica) --- */
+.area-ai-visual {
+  grid-column: 2 / 3; /* Ocupa el mismo espacio que la gráfica principal */
+  grid-row: 2 / 3;    /* cuando se activa */
+  /* Estilo visual sutil para diferenciarla */
+  border: 2px solid #2563eb22;
+  background: linear-gradient(to bottom right, #ffffff, #f0f9ff);
+}
+
 /* =========================================
-   5. COMPONENTES DEL SIDEBAR
+   5. COMPONENTES DEL SIDEBAR ORIGINALES
    ========================================= */
 .app-title { font-size: 1.5rem; font-weight: 800; margin-bottom: 5px; letter-spacing: -1px;}
 .user-greet { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 30px; }
@@ -132,7 +140,7 @@ body {
   box-sizing: border-box;
 }
 
-/* Botón Principal (Negro) */
+/* Botón Principal (Negro Original) */
 .btn-bento-primary {
   width: 100%; padding: 14px; border-radius: 16px;
   background: var(--text-primary); color: white; border: none;
@@ -144,7 +152,7 @@ body {
 .btn-bento-primary:hover { background: #000; }
 .btn-bento-primary:active { transform: scale(0.98); }
 
-/* Botón Logout (Rojo suave) */
+/* Botón Logout (Rojo suave Original) */
 .btn-logout {
   width: 100%; padding: 12px; border-radius: 16px;
   background: #fee2e2; color: var(--danger); border: none;
@@ -153,13 +161,11 @@ body {
 .btn-logout:hover { background: #fca5a5; }
 
 /* =========================================
-   6. ESTILOS DE LISTA (Historial)
+   6. ESTILOS DE LISTA (Historial Original)
    ========================================= */
 .transaction-item {
   display: flex; justify-content: space-between; align-items: center;
   padding: 14px 0; border-bottom: 1px solid #f3f4f6;
-  
-  /* Transición para el efecto de "Pagado" */
   transition: all 0.3s ease;
   border-left: 3px solid transparent;
   padding-left: 10px;
@@ -189,7 +195,7 @@ body {
 .mini-actions button:hover { opacity: 1; transform: scale(1.2); }
 
 /* =========================================
-   7. ESTILOS DEL BALANCE (Rojo/Verde)
+   7. ESTILOS DEL BALANCE (Rojo/Verde Original)
    ========================================= */
 
 /* Ajustes para sobreescribir componente viejo */
@@ -223,7 +229,7 @@ body {
 }
 
 /* =========================================
-   8. SWITCH DE GRÁFICAS Y TABS
+   8. SWITCH DE GRÁFICAS Y TABS ORIGINALES
    ========================================= */
 /* Toggle Pastel/Barras */
 .chart-toggle {
@@ -252,7 +258,7 @@ body {
 }
 
 /* =========================================
-   9. ESTADO PAGADO (Estilos Check)
+   9. ESTADO PAGADO (Estilos Check Originales)
    ========================================= */
 .transaction-item.paid-item {
   background-color: #eff6ff; /* Fondo azul claro */
@@ -266,7 +272,7 @@ body {
 }
 
 /* =========================================
-   10. MODALES Y FORMULARIOS
+   10. MODALES Y FORMULARIOS ORIGINALES
    ========================================= */
 .modal-overlay {
   position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -322,11 +328,10 @@ body {
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 /* =========================================
-   11. RESPONSIVE (MÓVIL & TABLET)
+   11. RESPONSIVE ORIGINAL (MÓVIL & TABLET)
    ========================================= */
 @media (max-width: 1024px) {
   
-  /* --- FIX DEL SCROLL EN MÓVIL --- */
   body {
     overflow-y: auto !important; 
     height: auto !important;
@@ -341,19 +346,21 @@ body {
     gap: 15px;
   }
   
-  .area-nav, .area-balance, .area-chart, .area-history {
+  .area-nav, .area-balance, .area-chart, .area-history, .area-ai-visual {
     grid-column: 1 / -1; grid-row: auto;
+    min-height: 350px; /* Asegura espacio para el título + gráfica */
+  display: flex;
+  flex-direction: column;
   }
 
-  /* --- REORDENAMIENTO (El cambio que pediste) --- */
+  /* Reordenamiento Responsive Original */
   .area-balance { order: 1; }
   .area-nav     { order: 2; }
-  
-  /* Ahora el Historial va ANTES de la Gráfica */
   .area-history { order: 3; height: auto; } 
   .area-chart   { order: 4; height: 350px; }
+  .area-ai-visual { order: 5; height: 350px; }
 
-  /* Ajustes Visuales */
+  /* Ajustes Visuales Responsive */
   .area-nav .control-group input[type="date"] {
     width: 48%; display: inline-block; margin-right: 2%; margin-bottom: 0;
   }

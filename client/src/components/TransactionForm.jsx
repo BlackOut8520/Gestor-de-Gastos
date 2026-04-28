@@ -1,26 +1,19 @@
 import { useState, useEffect } from 'react'
+import { Calendar, Tag, DollarSign, Type, Plus, X } from 'lucide-react'
 
-// ACTUALIZACIÓN: Ahora recibimos "token" en los props
 function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
-  
-  // Estados iniciales vacíos
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [type, setType] = useState('gasto') 
   const [date, setDate] = useState(new Date().toLocaleDateString('en-CA'))
   const [category, setCategory] = useState('')
-  
   const [availableCategories, setAvailableCategories] = useState([]) 
   const [isCustomCategory, setIsCustomCategory] = useState(false) 
 
-  // --- EFECTO: CARGAR CATEGORÍAS ---
   useEffect(() => {
-    if (token) {
-        fetchCategories();
-    }
-  }, [token]) // Se ejecuta al recibir el token
+    if (token) fetchCategories();
+  }, [token])
 
-  // --- EFECTO: DETECTAR SI VAMOS A EDITAR ---
   useEffect(() => {
     if (editingTransaction) {
         setDescription(editingTransaction.description);
@@ -37,16 +30,12 @@ function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
     }
   }, [editingTransaction])
 
-
   const fetchCategories = () => {
-    // ACTUALIZACIÓN: Enviamos el token para obtener categorías
     fetch('http://localhost:4000/api/categories', {
         headers: { 'auth-token': token }
     })
       .then(res => res.json())
-      .then(data => {
-          if(Array.isArray(data)) setAvailableCategories(data);
-      })
+      .then(data => { if(Array.isArray(data)) setAvailableCategories(data); })
       .catch(err => console.error(err))
   }
 
@@ -54,129 +43,140 @@ function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
     e.preventDefault()
     if (!description || !amount || !category) return
 
-    // 1. Guardar categoría nueva si aplica
     if (isCustomCategory) {
       await fetch('http://localhost:4000/api/categories', {
         method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'auth-token': token // <--- Header de seguridad
-        },
+        headers: { 'Content-Type': 'application/json', 'auth-token': token },
         body: JSON.stringify({ name: category, type }) 
       });
       fetchCategories(); 
     }
 
     const finalAmount = type === 'gasto' ? -Math.abs(amount) : Math.abs(amount);
+    const transactionData = { description, amount: finalAmount, type, category, date }
 
-    const transactionData = {
-      description,
-      amount: finalAmount,
-      type,
-      category, 
-      date 
-    }
+    const method = editingTransaction ? 'PUT' : 'POST';
+    const url = editingTransaction 
+        ? `http://localhost:4000/api/transactions/${editingTransaction._id}`
+        : 'http://localhost:4000/api/transactions';
 
-    // --- DECISIÓN: ¿CREAR O EDITAR? ---
-    if (editingTransaction) {
-        // MODO EDICIÓN (PUT)
-        fetch(`http://localhost:4000/api/transactions/${editingTransaction._id}`, {
-            method: 'PUT',
-            headers: { 
-                'Content-Type': 'application/json',
-                'auth-token': token // <--- Header de seguridad
-            },
-            body: JSON.stringify(transactionData)
-        })
-        .then(res => res.json())
-        .then(data => {
-            onTransactionAdded(data); 
-            setIsCustomCategory(false);
-        });
-
-    } else {
-        // MODO CREACIÓN (POST)
-        fetch('http://localhost:4000/api/transactions', {
-            method: 'POST',
-            headers: { 
-                'Content-Type': 'application/json',
-                'auth-token': token // <--- Header de seguridad
-            },
-            body: JSON.stringify(transactionData)
-        })
-        .then(res => res.json())
-        .then(data => {
-            onTransactionAdded(data);
+    fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json', 'auth-token': token },
+        body: JSON.stringify(transactionData)
+    })
+    .then(res => res.json())
+    .then(data => {
+        onTransactionAdded(data); 
+        if(!editingTransaction) {
             setDescription('');
             setAmount('');
-            setIsCustomCategory(false);
-        });
-    }
+        }
+        setIsCustomCategory(false);
+    });
   }
 
   const filteredCategories = availableCategories.filter(c => c.type === type);
 
-  return (
-    <div className="form-container">
-      <h3>{editingTransaction ? '✏️ Editar Movimiento' : 'Agregar Movimiento'}</h3>
-      
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
-          <label>Fecha</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+return (
+  <div className="p-2">
+    <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-slate-900 text-white rounded-lg">
+          <Plus size={20} />
         </div>
-        <input 
-          type="text" 
-          placeholder="Descripción" 
-          value={description} 
-          onChange={(e) => setDescription(e.target.value)} 
-          required
-        />
-        <input 
-          type="number" 
-          placeholder="Monto" 
-          value={amount} 
-          onChange={(e) => setAmount(e.target.value)} 
-          required
-        />
-        <div className="form-row">
-            <select 
-                value={type} 
-                onChange={(e) => {
-                    setType(e.target.value);
-                    if(!editingTransaction) setCategory('');
-                    setIsCustomCategory(false);
-                }}
-            >
-                <option value="ingreso">Ingreso</option>
-                <option value="gasto">Gasto</option>
-            </select>
-
-            {isCustomCategory ? (
-                <div style={{ display: 'flex', gap: '5px', width: '100%' }}>
-                    <input 
-                        type="text" 
-                        placeholder="Nueva categoría..." 
-                        value={category} 
-                        onChange={(e) => setCategory(e.target.value)}
-                        autoFocus
-                    />
-                    <button type="button" onClick={() => setIsCustomCategory(false)}>✖</button>
-                </div>
-            ) : (
-                <select value={category} onChange={(e) => e.target.value === 'NEW_CUSTOM' ? setIsCustomCategory(true) : setCategory(e.target.value)} required>
-                    <option value="">-- Categoría --</option>
-                    {filteredCategories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
-                    <option value="NEW_CUSTOM">➕ Crear nueva...</option>
-                </select>
-            )}
-        </div>
-        <button className="btn-block">
-            {editingTransaction ? 'Guardar Cambios' : 'Agregar Transacción'}
-        </button>
-      </form>
+        <h3 className="text-xl font-bold text-slate-800">
+          {editingTransaction ? 'Editar Movimiento' : 'Nuevo Movimiento'}
+        </h3>
+      </div>
     </div>
-  )
+    
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* FECHA */}
+      <div>
+        <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Fecha</label>
+        <div className="relative flex items-center">
+          <Calendar className="absolute left-4 text-slate-400 pointer-events-none" size={18} />
+          <input 
+            type="date" 
+            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-700"
+            value={date} 
+            onChange={(e) => setDate(e.target.value)} 
+            required 
+          />
+        </div>
+      </div>
+
+      {/* CONCEPTO */}
+      <div>
+        <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Concepto</label>
+        <div className="relative flex items-center">
+          <Type className="absolute left-4 text-slate-400 pointer-events-none" size={18} />
+          <input 
+            type="text" 
+            placeholder="Ej. Suscripción Netflix" 
+            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-700"
+            value={description} 
+            onChange={(e) => setDescription(e.target.value)} 
+            required
+          />
+        </div>
+      </div>
+
+      {/* CANTIDAD */}
+      <div>
+        <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Cantidad</label>
+        <div className="relative flex items-center">
+          <DollarSign className="absolute left-4 text-slate-400 pointer-events-none" size={18} />
+          <input 
+            type="number" 
+            placeholder="0.00" 
+            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-xl text-slate-900"
+            value={amount} 
+            onChange={(e) => setAmount(e.target.value)} 
+            required
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Tipo</label>
+            <select 
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 transition-all font-bold text-slate-700 appearance-none"
+                value={type} 
+                onChange={(e) => setType(e.target.value)}
+            >
+                <option value="ingreso">🟢 Ingreso</option>
+                <option value="gasto">🔴 Gasto</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Categoría</label>
+            <select 
+                value={category} 
+                onChange={(e) => e.target.value === 'NEW_CUSTOM' ? setIsCustomCategory(true) : setCategory(e.target.value)} 
+                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 transition-all font-bold text-slate-700 appearance-none"
+                required
+            >
+                <option value="">Seleccionar</option>
+                {filteredCategories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                <option value="NEW_CUSTOM">➕ Nueva...</option>
+            </select>
+          </div>
+      </div>
+
+      {/* BOTÓN DEFINITIVO (REEMPLAZO TOTAL) */}
+      <button 
+        type="submit"
+        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:bg-black hover:shadow-xl hover:shadow-slate-200 transform active:scale-[0.98] transition-all mt-4 border-none cursor-pointer"
+      >
+          {editingTransaction ? 'Actualizar Movimiento' : 'Registrar Movimiento'}
+      </button>
+    </form>
+  </div>
+);
 }
 
 export default TransactionForm

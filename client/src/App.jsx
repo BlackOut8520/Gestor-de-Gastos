@@ -5,22 +5,32 @@ import { IncomeExpenses } from './components/IncomeExpenses'
 import { ExpenseChart } from './components/ExpenseChart'
 import { Login } from './components/Login'
 import { ComparisonChart } from './components/ComparisonChart'
-import './App.css'
+import { NetFlowChart } from './components/NetFlowChart'
+import AiChat from './components/AiChat'; 
+import { VisualInsight } from './components/VisualInsight'; 
+import './App.css' 
 
 function App() {
   // 1. ESTADOS DE AUTENTICACIÓN
   const [token, setToken] = useState(localStorage.getItem('auth-token') || '');
-  // Estado para el nombre del usuario (Leemos del localStorage o ponemos 'Usuario' por defecto)
   const [username, setUsername] = useState(localStorage.getItem('auth-user') || 'Usuario');
 
   // ESTADOS DE VISTA
-  const [chartView, setChartView] = useState('expense'); // 'expense' | 'comparison'
-  const [historyFilter, setHistoryFilter] = useState('all'); // 'all' | 'ingreso' | 'gasto'
+  const [chartView, setChartView] = useState('expense'); // 'expense' | 'comparison' | 'netflow' | 'income'
+  const [historyFilter, setHistoryFilter] = useState('all'); 
   
   // DATOS
   const [transactions, setTransactions] = useState([])
   const [globalBalance, setGlobalBalance] = useState(0) 
   
+  // INSIGHTS VISUALES DE LA IA
+  const [aiVisualData, setAiVisualData] = useState(null);
+
+  const handleVisualData = (data) => {
+    console.log("Datos visuales recibidos en App:", data);
+    setAiVisualData(data);
+  };
+
   // MODALES
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState(null);
@@ -36,25 +46,19 @@ function App() {
   const handleLogout = () => {
     setToken('');
     localStorage.removeItem('auth-token');
-    
-    // Limpiamos también el usuario
     localStorage.removeItem('auth-user');
     setUsername('Usuario');
-
     setTransactions([]);
     setGlobalBalance(0);
+    setAiVisualData(null); 
   }
 
   // --- LOGIN SUCCESS ---
   const handleLoginSuccess = (newToken) => {
     localStorage.setItem('auth-token', newToken);
     setToken(newToken);
-    
-    // Al entrar, leemos inmediatamente el nombre que guardó el Login.jsx
     const savedName = localStorage.getItem('auth-user');
-    if (savedName) {
-        setUsername(savedName);
-    }
+    if (savedName) setUsername(savedName);
   };
 
   // --- FETCHERS ---
@@ -62,7 +66,7 @@ function App() {
     if (!token) return;
     const cutOffDate = endDate || dateRange.to;
     fetch(`http://localhost:4000/api/transactions/summary?date=${cutOffDate}`, { headers: { 'auth-token': token } })
-      .then(res => { if(!res.ok) throw new Error("Error"); return res.json(); })
+      .then(res => res.json())
       .then(data => setGlobalBalance(data.balance))
       .catch(err => console.error(err));
   }
@@ -78,7 +82,6 @@ function App() {
   }
 
   useEffect(() => { if (token) refreshData(); }, [dateRange, token])
-  useEffect(() => { if (token) fetchGlobalBalance(); }, [token])
 
   // --- HANDLERS ---
   const confirmDelete = async () => {
@@ -91,7 +94,7 @@ function App() {
             setTransactions(transactions.filter(t => t._id !== transactionToDelete));
             fetchGlobalBalance(dateRange.to);
             setIsDeleteModalOpen(false); setTransactionToDelete(null);
-        } else { alert("Error al borrar."); }
+        }
     } catch (error) { console.error(error); }
   }
 
@@ -122,10 +125,7 @@ function App() {
 
   // --- FILTRADO ---
   const filteredTransactions = transactions
-    .filter(t => {
-        if (historyFilter === 'all') return true;
-        return t.type === historyFilter;
-    })
+    .filter(t => historyFilter === 'all' || t.type === historyFilter)
     .sort((a,b) => new Date(b.date) - new Date(a.date));
 
   return (
@@ -134,19 +134,13 @@ function App() {
       {/* 1. SIDEBAR */}
       <aside className="bento-box area-nav">
         <div>
-          <h1 className="app-title">BlackOut Systems</h1>
+          <h1 className="app-title">BlackLabs Systems</h1>
           
-          {/* HEADER DEL SIDEBAR: SALUDO + LOGOUT */}
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px'}}>
              <p className="user-greet" style={{marginBottom:0}}>
                 Bienvenido, <strong>{username}</strong> 👋
              </p>
-             
-             <button 
-                onClick={handleLogout} 
-                className="btn-logout" 
-                style={{width:'auto', padding:'6px 10px', fontSize:'0.75rem', height:'fit-content'}}
-             >
+             <button onClick={handleLogout} className="btn-logout" style={{width:'auto', padding:'6px 10px', fontSize:'0.75rem', height:'fit-content'}}>
                 Salir
              </button>
           </div>
@@ -171,21 +165,40 @@ function App() {
          <Balance transactions={transactions} globalBalance={globalBalance} />
       </section>
 
-      {/* 3. GRÁFICA */}
+      {/* 3. GRÁFICA PRINCIPAL CON LOGICA DE 4 VISTAS */}
       <section className="bento-box area-chart">
         <div className="box-header">
            <h3>Análisis Visual</h3>
            <div className="chart-toggle">
-              <button className={chartView === 'expense' ? 'active' : ''} onClick={() => setChartView('expense')}>Pastel</button>
-              <button className={chartView === 'comparison' ? 'active' : ''} onClick={() => setChartView('comparison')}>Barras</button>
+              <button className={chartView === 'expense' ? 'active' : ''} onClick={() => setChartView('expense')}>Gastos</button>
+              <button className={chartView === 'income' ? 'active' : ''} onClick={() => setChartView('income')}>Ingresos</button>
+              <button className={chartView === 'comparison' ? 'active' : ''} onClick={() => setChartView('comparison')}>Comparación</button>
+              <button className={chartView === 'netflow' ? 'active' : ''} onClick={() => setChartView('netflow')}>Flujo Neto</button>
+
            </div>
         </div>
-        <div style={{ flex: 1, minHeight: 0 }}>
-           {chartView === 'expense' ? <ExpenseChart transactions={transactions} /> : <ComparisonChart transactions={transactions} />}
-        </div>
+<div style={{ flex: 1, minHeight: 0 }}>
+   {chartView === 'expense' && <ExpenseChart transactions={transactions} type="gasto" />}
+   {chartView === 'comparison' && <ComparisonChart transactions={transactions} />}
+   {chartView === 'netflow' && <NetFlowChart transactions={transactions} />}
+   
+   {/* Si quieres ver el pastel de ingresos, así se debe ver: */}
+   {chartView === 'income' && <ExpenseChart transactions={transactions} type="ingreso" />}
+</div>
       </section>
 
-      {/* 4. HISTORIAL */}
+      {/* 4. ÁREA DE INSIGHTS DE IA */}
+      {aiVisualData && (
+        <section className="bento-box area-ai-visual">
+          <div className="box-header">
+            <h3>AI Insight ✨</h3>
+            <button onClick={() => setAiVisualData(null)} style={{background:'none', border:'none', cursor:'pointer', color:'#9ca3af'}}>✕</button>
+          </div>
+          <VisualInsight visualData={aiVisualData} />
+        </section>
+      )}
+
+      {/* 5. HISTORIAL */}
       <section className="bento-box area-history">
         <div className="box-header">
            <h3>Movimientos</h3>
@@ -219,11 +232,7 @@ function App() {
                         {t.type === 'ingreso' ? '+' : '-'}${Math.abs(t.amount)}
                      </div>
                      <div className="mini-actions">
-                        <button 
-                            onClick={() => handleTogglePaid(t)} 
-                            title={t.isPaid ? "Marcar pendiente" : "Marcar pagado"}
-                            style={{ color: t.isPaid ? '#3b82f6' : '#9ca3af' }}
-                        >
+                        <button onClick={() => handleTogglePaid(t)} title={t.isPaid ? "Marcar pendiente" : "Marcar pagado"} style={{ color: t.isPaid ? '#3b82f6' : '#9ca3af' }}>
                             {t.isPaid ? '✅' : '☑️'}
                         </button>
                         <button onClick={() => handleEditClick(t)} title="Editar">✏️</button>
@@ -235,6 +244,8 @@ function App() {
            )}
         </div>
       </section>
+
+      <AiChat token={token} onVisualDataReceived={handleVisualData} />
 
       {/* MODALES */}
       {isModalOpen && (
