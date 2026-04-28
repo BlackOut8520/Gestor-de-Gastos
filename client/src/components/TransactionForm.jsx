@@ -175,8 +175,8 @@ return (
 
       <button 
         type="submit"
-        className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:bg-black hover:shadow-xl hover:shadow-slate-200 transform active:scale-[0.98] transition-all mt-4 border-none cursor-pointer"
-      >
+        className="w-full mt-6 py-3.5 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
+>
           {editingTransaction ? 'Actualizar Movimiento' : 'Registrar Movimiento'}
       </button>
     </form>
