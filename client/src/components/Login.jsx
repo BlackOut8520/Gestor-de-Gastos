@@ -14,10 +14,15 @@ export const Login = ({ onLogin }) => {
     setError('');
     
     const endpoint = isRegistering ? '/api/auth/register' : '/api/auth/login';
+    const targetUrl = `${API_BASE_URL}${endpoint}`; // Extraemos la URL final
+
+    // --- EL CHIVATO (Trampa para el celular) ---
+    alert(`ATENCIÓN: Intentando conectar a:\n${targetUrl}`);
+    // ------------------------------------------
 
     try {
-      // MODIFICACIÓN: Usamos API_BASE_URL en lugar de localhost fijo
-      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      // MODIFICACIÓN: Usamos la variable targetUrl que acabamos de crear
+      const res = await fetch(targetUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
