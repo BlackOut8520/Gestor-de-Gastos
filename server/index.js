@@ -16,13 +16,12 @@ const app = express();
 
 // --- CONFIGURACIÓN MEJORADA DE CORS ---
 const corsOptions = {
-    origin: [
-        'http://localhost:5173', // Para desarrollo local
-        'https://gestor-de-gastos-uju1-p35yfnvy7-blackoutriotv-9442s-projects.vercel.app' // ¡CAMBIA ESTO por tu URL de Vercel (sin la / al final)!
-    ],
+    origin: '*', // Permite peticiones desde cualquier lugar (Vercel, localhost, etc.)
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'auth-token'],
-    credentials: true // Permite el envío de headers de autenticación
+    exposedHeaders: ['auth-token'], // Permite que el celular vea el token en la respuesta
+    preflightContinue: false,
+    optionsSuccessStatus: 204
 };
 
 // Middlewares
