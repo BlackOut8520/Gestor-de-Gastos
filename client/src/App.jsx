@@ -8,35 +8,49 @@ import { ComparisonChart } from './components/ComparisonChart'
 import { NetFlowChart } from './components/NetFlowChart'
 import AiChat from './components/AiChat'; 
 import { VisualInsight } from './components/VisualInsight'; 
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+// IMPORTAMOS LOS ÍCONOS PROFESIONALES
+import { ArrowUpRight, ArrowDownRight, Edit2, Trash2, CheckCircle2, Circle } from 'lucide-react';
 import './App.css' 
-//Coment redeploy
 
 // --- CONFIGURACIÓN DE LA API ---
-// Usa la variable de Vercel en producción o localhost en desarrollo
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
+// --- HELPERS PARA EL DATEPICKER ---
+const parseDateString = (dateString) => {
+  if (!dateString || typeof dateString !== 'string' || !dateString.includes('-')) {
+    return new Date();
+  }
+  try {
+    const [y, m, d] = dateString.split('-');
+    return new Date(y, m - 1, d);
+  } catch (error) {
+    return new Date();
+  }
+};
+
+const formatDateObj = (dateObj) => {
+  if (!dateObj) return '';
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 function App() {
-  // 1. ESTADOS DE AUTENTICACIÓN
   const [token, setToken] = useState(localStorage.getItem('auth-token') || '');
   const [username, setUsername] = useState(localStorage.getItem('auth-user') || 'Usuario');
-
-  // ESTADOS DE VISTA
   const [chartView, setChartView] = useState('expense'); 
   const [historyFilter, setHistoryFilter] = useState('all'); 
-  
-  // DATOS
   const [transactions, setTransactions] = useState([])
   const [globalBalance, setGlobalBalance] = useState(0) 
-  
-  // INSIGHTS VISUALES DE LA IA
   const [aiVisualData, setAiVisualData] = useState(null);
 
   const handleVisualData = (data) => {
-    console.log("Datos visuales recibidos en App:", data);
     setAiVisualData(data);
   };
 
-  // MODALES
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTransaction, setEditingTransaction] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -47,7 +61,6 @@ function App() {
     to: new Date().toISOString().split('T')[0] 
   })
 
-  // --- LOGOUT ---
   const handleLogout = () => {
     setToken('');
     localStorage.removeItem('auth-token');
@@ -58,7 +71,6 @@ function App() {
     setAiVisualData(null); 
   }
 
-  // --- LOGIN SUCCESS ---
   const handleLoginSuccess = (newToken) => {
     localStorage.setItem('auth-token', newToken);
     setToken(newToken);
@@ -66,11 +78,9 @@ function App() {
     if (savedName) setUsername(savedName);
   };
 
-  // --- FETCHERS ---
   const fetchGlobalBalance = (endDate) => {
     if (!token) return;
     const cutOffDate = endDate || dateRange.to;
-    // CAMBIO: Usar API_BASE_URL
     fetch(`${API_BASE_URL}/api/transactions/summary?date=${cutOffDate}`, { headers: { 'auth-token': token } })
       .then(res => res.json())
       .then(data => setGlobalBalance(data.balance))
@@ -79,7 +89,6 @@ function App() {
 
   const refreshData = () => {
     if (!token) return;
-    // CAMBIO: Usar API_BASE_URL
     const url = `${API_BASE_URL}/api/transactions?from=${dateRange.from}&to=${dateRange.to}`;
     fetch(url, { headers: { 'auth-token': token } })
       .then(res => { if (res.status === 401) { handleLogout(); return []; } return res.json(); })
@@ -90,11 +99,9 @@ function App() {
 
   useEffect(() => { if (token) refreshData(); }, [dateRange, token])
 
-  // --- HANDLERS ---
   const confirmDelete = async () => {
     if (!transactionToDelete) return;
     try {
-        // CAMBIO: Usar API_BASE_URL
         const res = await fetch(`${API_BASE_URL}/api/transactions/${transactionToDelete}`, {
             method: 'DELETE', headers: { 'auth-token': token }
         });
@@ -109,7 +116,6 @@ function App() {
   const handleTogglePaid = async (transaction) => {
     try {
         const updatedStatus = !transaction.isPaid;
-        // CAMBIO: Usar API_BASE_URL
         const res = await fetch(`${API_BASE_URL}/api/transactions/${transaction._id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'auth-token': token },
@@ -128,19 +134,16 @@ function App() {
   const handleEditClick = (t) => { setEditingTransaction(t); setIsModalOpen(true); }
   const handleNewClick = () => { setEditingTransaction(null); setIsModalOpen(true); }
   const handleDeleteClick = (id) => { setTransactionToDelete(id); setIsDeleteModalOpen(true); }
-  const handleDateChange = (e) => { setDateRange({ ...dateRange, [e.target.name]: e.target.value }) }
 
-  // CAMBIO: Pasar la API_URL al Login si es necesario, o que Login use la misma lógica
   if (!token) return <Login onLogin={handleLoginSuccess} />;
 
-  // --- FILTRADO ---
   const filteredTransactions = transactions
     .filter(t => historyFilter === 'all' || t.type === historyFilter)
     .sort((a,b) => new Date(b.date) - new Date(a.date));
 
   return (
     <div className="bento-container">
-      {/* ... (Resto del JSX igual que tu archivo original) ... */}
+      
       <aside className="bento-box area-nav">
         <div>
           <h1 className="app-title">BlackLabs Systems</h1>
@@ -155,13 +158,35 @@ function App() {
           <div className="control-group">
             <button className="btn-bento-primary" onClick={handleNewClick}><span>+</span> Nueva Transacción</button>
           </div>
+
           <div className="control-group">
-             <label>Periodo Actual</label>
-             <input type="date" name="from" value={dateRange.from} onChange={handleDateChange} />
-             <input type="date" name="to" value={dateRange.to} onChange={handleDateChange} />
+             <label className="section-label">PERIODO ACTUAL</label>
+             <div className="date-range-container">
+                <div className="date-input-wrapper">
+                   <span className="date-badge">Desde</span>
+                   <DatePicker 
+                      selected={parseDateString(dateRange.from)} 
+                      onChange={(date) => setDateRange({ ...dateRange, from: formatDateObj(date) })} 
+                      className="bento-date"
+                      dateFormat="dd/MM/yyyy"
+                      withPortal
+                   />
+                </div>
+                <div className="date-input-wrapper mt-sm">
+                   <span className="date-badge">Hasta</span>
+                   <DatePicker 
+                      selected={parseDateString(dateRange.to)} 
+                      onChange={(date) => setDateRange({ ...dateRange, to: formatDateObj(date) })} 
+                      className="bento-date"
+                      dateFormat="dd/MM/yyyy"
+                      withPortal
+                   />
+                </div>
+             </div>
           </div>
-          <div className="control-group">
-             <label>Resumen Mensual</label>
+
+          <div className="control-group" style={{ marginTop: '30px' }}>
+             <label className="section-label">RESUMEN MENSUAL</label>
              <IncomeExpenses transactions={transactions} />
           </div>
         </div>
@@ -199,6 +224,7 @@ function App() {
         </section>
       )}
 
+      {/* ÁREA HISTORIAL REDISEÑADA */}
       <section className="bento-box area-history">
         <div className="box-header">
             <h3>Movimientos</h3>
@@ -211,32 +237,48 @@ function App() {
         
         <div className="transactions-feed">
            {filteredTransactions.length === 0 ? (
-             <p style={{textAlign:'center', color:'#999', marginTop:'40px'}}>
+             <p style={{textAlign:'center', color:'#94a3b8', marginTop:'40px', fontWeight:'600'}}>
                 No hay {historyFilter === 'all' ? 'movimientos' : historyFilter === 'ingreso' ? 'ingresos' : 'gastos'} registrados.
              </p>
            ) : (
              filteredTransactions.map(t => (
                <div key={t._id} className={`transaction-item ${t.isPaid ? 'paid-item' : ''}`}>
-                  <div style={{display:'flex', alignItems:'center'}}>
-                    <div className="t-icon">{t.type === 'ingreso' ? '💰' : '💸'}</div>
+                  <div style={{display:'flex', alignItems:'center', flex: 1}}>
+                    
+                    {/* Ícono Profesional */}
+                    <div className={`t-icon ${t.type === 'ingreso' ? 'income' : 'expense'}`}>
+                        {t.type === 'ingreso' ? <ArrowUpRight size={22} strokeWidth={2.5} /> : <ArrowDownRight size={22} strokeWidth={2.5} />}
+                    </div>
+
                     <div className="t-details">
                        <span className="t-desc">
                            {t.description}
                            {t.isPaid && <span className="paid-badge">PAGADO</span>}
                        </span>
-                       <span className="t-sub">{t.date} • {t.category}</span>
+                       <span className="t-meta">
+                          <span>{t.date}</span>
+                          <span className="t-category-pill">{t.category}</span>
+                       </span>
                     </div>
                   </div>
+
                   <div style={{textAlign:'right'}}>
+                     {/* Monto Formateado */}
                      <div className={`t-amount ${t.type === 'ingreso' ? 'plus' : 'minus'}`}>
-                        {t.type === 'ingreso' ? '+' : '-'}${Math.abs(t.amount)}
+                        {t.type === 'ingreso' ? '+' : '-'}${Math.abs(t.amount).toLocaleString('es-MX', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                      </div>
+                     
+                     {/* Acciones con Iconos */}
                      <div className="mini-actions">
-                        <button onClick={() => handleTogglePaid(t)} title={t.isPaid ? "Marcar pendiente" : "Marcar pagado"} style={{ color: t.isPaid ? '#3b82f6' : '#9ca3af' }}>
-                            {t.isPaid ? '✅' : '☑️'}
+                        <button className={`action-btn check ${t.isPaid ? 'active' : ''}`} onClick={() => handleTogglePaid(t)} title={t.isPaid ? "Desmarcar" : "Marcar pagado"}>
+                            {t.isPaid ? <CheckCircle2 size={18} strokeWidth={2.5} /> : <Circle size={18} strokeWidth={2} />}
                         </button>
-                        <button onClick={() => handleEditClick(t)} title="Editar">✏️</button>
-                        <button onClick={() => handleDeleteClick(t._id)} title="Borrar" style={{color:'#ef4444'}}>🗑️</button>
+                        <button className="action-btn edit" onClick={() => handleEditClick(t)} title="Editar">
+                            <Edit2 size={16} strokeWidth={2.5} />
+                        </button>
+                        <button className="action-btn delete" onClick={() => handleDeleteClick(t._id)} title="Borrar">
+                            <Trash2 size={16} strokeWidth={2.5} />
+                        </button>
                      </div>
                   </div>
                </div>

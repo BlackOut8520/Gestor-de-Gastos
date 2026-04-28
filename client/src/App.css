@@ -163,37 +163,99 @@ body {
 /* =========================================
    6. ESTILOS DE LISTA (Historial Original)
    ========================================= */
+/* =========================================
+   6. ESTILOS DE LISTA PREMIUM (Historial)
+   ========================================= */
+.transactions-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 4px;
+}
+
 .transaction-item {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 14px 0; border-bottom: 1px solid #f3f4f6;
-  transition: all 0.3s ease;
-  border-left: 3px solid transparent;
-  padding-left: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: white;
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  transition: all 0.2s ease;
 }
-.transaction-item:last-child { border-bottom: none; }
 
-/* Icono emoji con fondo */
+.transaction-item:hover {
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
+}
+
 .t-icon {
-  width: 42px; height: 42px; border-radius: 14px; background: #f3f4f6;
-  display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-  margin-right: 15px;
+  width: 46px; 
+  height: 46px; 
+  border-radius: 14px;
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+  margin-right: 16px; 
+  flex-shrink: 0;
+}
+.t-icon.income { background-color: #ecfdf5; color: #10b981; }
+.t-icon.expense { background-color: #fff1f2; color: #f43f5e; }
+
+.t-details { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.t-desc { 
+  font-weight: 800; 
+  font-size: 0.95rem; 
+  color: #0f172a; 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
 }
 
-.t-details { flex: 1; display: flex; flex-direction: column; }
-.t-desc { font-weight: 600; font-size: 0.95rem; color: var(--text-primary); }
-.t-sub { font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px; }
-
-.t-amount { font-weight: 700; font-size: 1rem; }
-.plus { color: var(--success); }
-.minus { color: var(--text-primary); } 
-
-/* Botones pequeños (Editar/Borrar/Check) */
-.mini-actions button {
-  border: none; background: transparent; cursor: pointer;
-  font-size: 1rem; margin-left: 5px; opacity: 0.7; transition: all 0.2s;
+.t-meta { 
+  display: flex; 
+  align-items: center; 
+  gap: 8px; 
+  font-size: 0.75rem; 
+  color: #64748b; 
+  font-weight: 600; 
 }
-.mini-actions button:hover { opacity: 1; transform: scale(1.2); }
+.t-category-pill { 
+  background: #f1f5f9; 
+  padding: 2px 8px; 
+  border-radius: 8px; 
+  color: #475569; 
+  font-weight: 700; 
+}
 
+.t-amount { font-weight: 800; font-size: 1.15rem; }
+.t-amount.plus { color: #10b981; }
+.t-amount.minus { color: #0f172a; }
+
+.mini-actions { 
+  display: flex; 
+  gap: 6px; 
+  margin-top: 6px; 
+  justify-content: flex-end; 
+}
+
+.action-btn { 
+  background: transparent; 
+  border: none; 
+  cursor: pointer; 
+  color: #cbd5e1; 
+  transition: all 0.2s; 
+  padding: 6px; 
+  border-radius: 8px;
+  display: flex; 
+  align-items: center; 
+  justify-content: center;
+}
+.action-btn:hover { background: #f8fafc; color: #64748b; }
+.action-btn.edit:hover { color: #3b82f6; background: #eff6ff; }
+.action-btn.delete:hover { color: #ef4444; background: #fef2f2; }
+.action-btn.check.active { color: #10b981; }
 /* =========================================
    7. ESTILOS DEL BALANCE (Rojo/Verde Original)
    ========================================= */
@@ -261,16 +323,19 @@ body {
    9. ESTADO PAGADO (Estilos Check Originales)
    ========================================= */
 .transaction-item.paid-item {
-  background-color: #eff6ff; /* Fondo azul claro */
-  border-left: 3px solid #3b82f6; /* Borde azul */
-  border-radius: 4px;
+  background-color: #fafafa;
+  opacity: 0.8;
+  border-color: transparent;
 }
 .paid-badge {
-  display: inline-block; font-size: 0.6rem; background-color: #3b82f6;
-  color: white; padding: 2px 6px; border-radius: 8px;
-  margin-left: 8px; vertical-align: middle; font-weight: bold;
+  font-size: 0.6rem; 
+  background-color: #10b981;
+  color: white; 
+  padding: 3px 8px; 
+  border-radius: 8px;
+  font-weight: 800; 
+  letter-spacing: 0.05em;
 }
-
 /* =========================================
    10. MODALES Y FORMULARIOS ORIGINALES
    ========================================= */
@@ -328,7 +393,196 @@ body {
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
 /* =========================================
-   11. RESPONSIVE ORIGINAL (MÓVIL & TABLET)
+   11. DISEÑO DEL SIDEBAR PREMIUM (BLACKLABS)
+   ========================================= */
+
+/* Títulos de sección (Periodo, Resumen) */
+.section-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+/* --- CALENDARIOS --- */
+.date-range-container {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 12px;
+  border-radius: 16px;
+}
+
+.date-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  overflow: visible; /* Cambiado para evitar que se corte el modal de react-datepicker */
+}
+
+.date-input-wrapper.mt-sm {
+  margin-top: 8px;
+}
+
+.date-badge {
+  background-color: #f1f5f9;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-right: 1px solid #e2e8f0;
+  text-transform: uppercase;
+  z-index: 1;
+}
+
+.bento-date {
+  width: 100%;
+  border: none;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #0f172a;
+  outline: none;
+  cursor: pointer;
+  background: transparent;
+}
+
+/* =========================================
+   12. OVERRIDE DE REACT-DATEPICKER (MODAL PREMIUM)
+   ========================================= */
+.react-datepicker-wrapper {
+  flex: 1;
+}
+
+.react-datepicker {
+  border: none !important;
+  border-radius: 20px !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  font-family: inherit !important;
+  padding: 12px;
+  background-color: #ffffff !important;
+}
+
+.react-datepicker__header {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  padding-bottom: 10px !important;
+}
+
+.react-datepicker__current-month {
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  text-transform: capitalize;
+}
+
+.react-datepicker__day-name {
+  color: #64748b !important;
+  font-weight: 700 !important;
+}
+
+.react-datepicker__day {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease;
+}
+
+.react-datepicker__day:hover {
+  background-color: #f1f5f9 !important;
+}
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #111827 !important; /* Negro Bento */
+  color: #ffffff !important;
+  font-weight: bold !important;
+}
+
+/* Esconder la flecha tipo "globo" para un look más limpio */
+.react-datepicker__triangle {
+  display: none !important;
+}
+
+/* --- RESUMEN MENSUAL (INCOME/EXPENSES) --- */
+.summary-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid transparent;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Tema Ingresos */
+.card-income {
+  background-color: #ecfdf5;
+  border-color: #d1fae5;
+}
+.icon-income {
+  background-color: #10b981;
+  color: white;
+  padding: 10px;
+  border-radius: 12px;
+  display: flex;
+}
+.card-income .summary-title {
+  color: #059669;
+}
+
+/* Tema Gastos */
+.card-expense {
+  background-color: #fff1f2;
+  border-color: #ffe4e6;
+}
+.icon-expense {
+  background-color: #f43f5e;
+  color: white;
+  padding: 10px;
+  border-radius: 12px;
+  display: flex;
+}
+.card-expense .summary-title {
+  color: #e11d48;
+}
+
+/* Textos internos */
+.summary-data {
+  display: flex;
+  flex-direction: column;
+}
+.summary-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 4px 0;
+}
+.summary-amount {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1;
+}
+
+/* =========================================
+   13. RESPONSIVE ORIGINAL (MÓVIL & TABLET)
    ========================================= */
 @media (max-width: 1024px) {
   
@@ -348,9 +602,9 @@ body {
   
   .area-nav, .area-balance, .area-chart, .area-history, .area-ai-visual {
     grid-column: 1 / -1; grid-row: auto;
-    min-height: 350px; /* Asegura espacio para el título + gráfica */
-  display: flex;
-  flex-direction: column;
+    min-height: 350px; 
+    display: flex;
+    flex-direction: column;
   }
 
   /* Reordenamiento Responsive Original */

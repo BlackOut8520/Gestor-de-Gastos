@@ -1,14 +1,38 @@
 import { useState, useEffect } from 'react'
 import { Calendar, Tag, DollarSign, Type, Plus, X } from 'lucide-react'
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 // --- CONFIGURACIÓN DE LA API ---
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
+// --- HELPERS PARA EL DATEPICKER ---
+const parseDateString = (dateString) => {
+  if (!dateString || typeof dateString !== 'string' || !dateString.includes('-')) {
+    return new Date();
+  }
+  try {
+    const [y, m, d] = dateString.split('-');
+    return new Date(y, m - 1, d);
+  } catch (error) {
+    return new Date();
+  }
+};
+
+const formatDateObj = (dateObj) => {
+  if (!dateObj) return '';
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
   const [type, setType] = useState('gasto') 
-  const [date, setDate] = useState(new Date().toLocaleDateString('en-CA'))
+  // Inicializamos con la fecha actual formateada YYYY-MM-DD
+  const [date, setDate] = useState(formatDateObj(new Date()))
   const [category, setCategory] = useState('')
   const [availableCategories, setAvailableCategories] = useState([]) 
   const [isCustomCategory, setIsCustomCategory] = useState(false) 
@@ -24,17 +48,18 @@ function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
         setType(editingTransaction.type);
         setDate(editingTransaction.date);
         setCategory(editingTransaction.category);
+        setIsCustomCategory(false);
     } else {
         setDescription('');
         setAmount('');
         setType('gasto');
-        setDate(new Date().toLocaleDateString('en-CA'));
+        setDate(formatDateObj(new Date()));
         setCategory('');
+        setIsCustomCategory(false);
     }
   }, [editingTransaction])
 
   const fetchCategories = () => {
-    // MODIFICACIÓN: Usar API_BASE_URL
     fetch(`${API_BASE_URL}/api/categories`, {
         headers: { 'auth-token': token }
     })
@@ -45,10 +70,9 @@ function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!description || !amount || !category) return
+    if (!description || !amount || !category) return 
 
     if (isCustomCategory) {
-      // MODIFICACIÓN: Usar API_BASE_URL
       await fetch(`${API_BASE_URL}/api/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'auth-token': token },
@@ -61,7 +85,6 @@ function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
     const transactionData = { description, amount: finalAmount, type, category, date }
 
     const method = editingTransaction ? 'PUT' : 'POST';
-    // MODIFICACIÓN: Usar API_BASE_URL
     const url = editingTransaction 
         ? `${API_BASE_URL}/api/transactions/${editingTransaction._id}`
         : `${API_BASE_URL}/api/transactions`;
@@ -77,51 +100,71 @@ function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
         if(!editingTransaction) {
             setDescription('');
             setAmount('');
+            setCategory('');
         }
         setIsCustomCategory(false);
     });
   }
 
+  const handleCategoryChange = (e) => {
+    if (e.target.value === 'NEW_CUSTOM') {
+      setIsCustomCategory(true);
+      setCategory(''); 
+    } else {
+      setIsCustomCategory(false);
+      setCategory(e.target.value);
+    }
+  };
+
   const filteredCategories = availableCategories.filter(c => c.type === type);
 
 return (
-  <div className="p-2">
-    <div className="flex items-center justify-between mb-8">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-slate-900 text-white rounded-lg">
-          <Plus size={20} />
-        </div>
-        <h3 className="text-xl font-bold text-slate-800">
-          {editingTransaction ? 'Editar Movimiento' : 'Nuevo Movimiento'}
-        </h3>
+  <div style={{ padding: '8px' }}>
+    
+    <div style={{ display: 'flex', alignItems: 'center', marginBottom: '24px', gap: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a', padding: '10px', color: 'white', borderRadius: '12px', width: 'fit-content' }}>
+        <Plus size={20} />
       </div>
+      <h3 style={{ fontSize: '1.4rem', fontWeight: '800', margin: 0, color: '#0f172a' }}>
+        {editingTransaction ? 'Editar Movimiento' : 'Nuevo Movimiento'}
+      </h3>
     </div>
     
-    <form onSubmit={handleSubmit} className="space-y-5">
-      {/* FECHA */}
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      
+      {/* FECHA (CON REACT-DATEPICKER MODAL) */}
       <div>
-        <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Fecha</label>
-        <div className="relative flex items-center">
-          <Calendar className="absolute left-4 text-slate-400 pointer-events-none" size={18} />
-          <input 
-            type="date" 
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-700"
-            value={date} 
-            onChange={(e) => setDate(e.target.value)} 
-            required 
-          />
+        <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Fecha</label>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          {/* Aumentamos el z-index del ícono para que no quede tapado */}
+          <Calendar size={18} style={{ position: 'absolute', left: '16px', color: '#94a3b8', zIndex: 10 }} />
+          <div style={{ width: '100%' }}>
+            <DatePicker 
+              selected={parseDateString(date)} 
+              onChange={(d) => setDate(formatDateObj(d))} 
+              dateFormat="dd/MM/yyyy"
+              withPortal
+              customInput={
+                <input 
+                  className="bento-input" 
+                  style={{ paddingLeft: '48px', width: '100%', boxSizing: 'border-box' }} 
+                />
+              }
+            />
+          </div>
         </div>
       </div>
 
       {/* CONCEPTO */}
       <div>
-        <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Concepto</label>
-        <div className="relative flex items-center">
-          <Type className="absolute left-4 text-slate-400 pointer-events-none" size={18} />
+        <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Concepto</label>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <Type size={18} style={{ position: 'absolute', left: '16px', color: '#94a3b8' }} />
           <input 
             type="text" 
             placeholder="Ej. Suscripción Netflix" 
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-medium text-slate-700"
+            className="bento-input"
+            style={{ paddingLeft: '48px' }}
             value={description} 
             onChange={(e) => setDescription(e.target.value)} 
             required
@@ -131,13 +174,14 @@ return (
 
       {/* CANTIDAD */}
       <div>
-        <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Cantidad</label>
-        <div className="relative flex items-center">
-          <DollarSign className="absolute left-4 text-slate-400 pointer-events-none" size={18} />
+        <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Cantidad</label>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+          <DollarSign size={18} style={{ position: 'absolute', left: '16px', color: '#94a3b8' }} />
           <input 
             type="number" 
             placeholder="0.00" 
-            className="w-full pl-12 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all font-bold text-xl text-slate-900"
+            className="bento-input"
+            style={{ paddingLeft: '48px', fontWeight: 'bold', fontSize: '1.25rem' }}
             value={amount} 
             onChange={(e) => setAmount(e.target.value)} 
             required
@@ -145,38 +189,76 @@ return (
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          {/* TIPO */}
           <div>
-            <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Tipo</label>
+            <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Tipo</label>
             <select 
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 transition-all font-bold text-slate-700 appearance-none"
+                className="bento-input bento-select"
                 value={type} 
-                onChange={(e) => setType(e.target.value)}
+                onChange={(e) => {
+                  setType(e.target.value);
+                  setCategory(''); 
+                  setIsCustomCategory(false);
+                }}
             >
                 <option value="ingreso">🟢 Ingreso</option>
                 <option value="gasto">🔴 Gasto</option>
             </select>
           </div>
 
+          {/* CATEGORÍA */}
           <div>
-            <label className="text-xs font-bold text-slate-400 uppercase mb-2 block">Categoría</label>
-            <select 
-                value={category} 
-                onChange={(e) => e.target.value === 'NEW_CUSTOM' ? setIsCustomCategory(true) : setCategory(e.target.value)} 
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:border-blue-500 transition-all font-bold text-slate-700 appearance-none"
-                required
-            >
-                <option value="">Seleccionar</option>
-                {filteredCategories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
-                <option value="NEW_CUSTOM">➕ Nueva...</option>
-            </select>
+            <label style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#94a3b8', textTransform: 'uppercase', marginBottom: '8px', display: 'block' }}>Categoría</label>
+            
+            {isCustomCategory ? (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input 
+                  type="text" 
+                  className="bento-input"
+                  placeholder="Ej. Nómina" 
+                  value={category} 
+                  onChange={(e) => setCategory(e.target.value)} 
+                  autoFocus
+                  required
+                />
+                <button 
+                  type="button" 
+                  onClick={() => { setIsCustomCategory(false); setCategory(''); }}
+                  style={{ padding: '0 14px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '12px', cursor: 'pointer', color: '#64748b' }}
+                  title="Cancelar"
+                >
+                  ✖
+                </button>
+              </div>
+            ) : (
+              <select 
+                  value={category} 
+                  onChange={handleCategoryChange} 
+                  className="bento-input bento-select"
+                  required
+              >
+                  <option value="">Seleccionar</option>
+                  {filteredCategories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                  <option value="NEW_CUSTOM">➕ Nueva...</option>
+              </select>
+            )}
           </div>
       </div>
 
+      {/* BOTÓN REGISTRAR */}
       <button 
         type="submit"
-        className="w-full mt-6 py-3.5 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all shadow-lg hover:shadow-xl active:scale-[0.98]"
->
+        className="btn-bento-primary"
+        style={{ 
+          width: '100%', 
+          marginTop: '16px', 
+          padding: '14px', 
+          fontSize: '1rem',
+          display: 'flex',
+          justifyContent: 'center'
+        }}
+      >
           {editingTransaction ? 'Actualizar Movimiento' : 'Registrar Movimiento'}
       </button>
     </form>
