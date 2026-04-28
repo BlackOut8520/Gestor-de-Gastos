@@ -18,7 +18,7 @@ const app = express();
 const corsOptions = {
     origin: [
         'http://localhost:5173', // Para desarrollo local
-        'https://tu-proyecto.vercel.app' // ¡CAMBIA ESTO por tu URL de Vercel (sin la / al final)!
+        'https://gestor-de-gastos-uju1-p35yfnvy7-blackoutriotv-9442s-projects.vercel.app' // ¡CAMBIA ESTO por tu URL de Vercel (sin la / al final)!
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'auth-token'],
