@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { Calendar, Tag, DollarSign, Type, Plus, X } from 'lucide-react'
 
+// --- CONFIGURACIÓN DE LA API ---
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
 function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
   const [description, setDescription] = useState('')
   const [amount, setAmount] = useState('')
@@ -31,7 +34,8 @@ function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
   }, [editingTransaction])
 
   const fetchCategories = () => {
-    fetch('http://localhost:4000/api/categories', {
+    // MODIFICACIÓN: Usar API_BASE_URL
+    fetch(`${API_BASE_URL}/api/categories`, {
         headers: { 'auth-token': token }
     })
       .then(res => res.json())
@@ -44,7 +48,8 @@ function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
     if (!description || !amount || !category) return
 
     if (isCustomCategory) {
-      await fetch('http://localhost:4000/api/categories', {
+      // MODIFICACIÓN: Usar API_BASE_URL
+      await fetch(`${API_BASE_URL}/api/categories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'auth-token': token },
         body: JSON.stringify({ name: category, type }) 
@@ -56,9 +61,10 @@ function TransactionForm({ onTransactionAdded, editingTransaction, token }) {
     const transactionData = { description, amount: finalAmount, type, category, date }
 
     const method = editingTransaction ? 'PUT' : 'POST';
+    // MODIFICACIÓN: Usar API_BASE_URL
     const url = editingTransaction 
-        ? `http://localhost:4000/api/transactions/${editingTransaction._id}`
-        : 'http://localhost:4000/api/transactions';
+        ? `${API_BASE_URL}/api/transactions/${editingTransaction._id}`
+        : `${API_BASE_URL}/api/transactions`;
 
     fetch(url, {
         method,
@@ -167,7 +173,6 @@ return (
           </div>
       </div>
 
-      {/* BOTÓN DEFINITIVO (REEMPLAZO TOTAL) */}
       <button 
         type="submit"
         className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold text-lg hover:bg-black hover:shadow-xl hover:shadow-slate-200 transform active:scale-[0.98] transition-all mt-4 border-none cursor-pointer"

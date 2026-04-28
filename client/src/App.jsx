@@ -10,13 +10,17 @@ import AiChat from './components/AiChat';
 import { VisualInsight } from './components/VisualInsight'; 
 import './App.css' 
 
+// --- CONFIGURACIÓN DE LA API ---
+// Usa la variable de Vercel en producción o localhost en desarrollo
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+
 function App() {
   // 1. ESTADOS DE AUTENTICACIÓN
   const [token, setToken] = useState(localStorage.getItem('auth-token') || '');
   const [username, setUsername] = useState(localStorage.getItem('auth-user') || 'Usuario');
 
   // ESTADOS DE VISTA
-  const [chartView, setChartView] = useState('expense'); // 'expense' | 'comparison' | 'netflow' | 'income'
+  const [chartView, setChartView] = useState('expense'); 
   const [historyFilter, setHistoryFilter] = useState('all'); 
   
   // DATOS
@@ -65,7 +69,8 @@ function App() {
   const fetchGlobalBalance = (endDate) => {
     if (!token) return;
     const cutOffDate = endDate || dateRange.to;
-    fetch(`http://localhost:4000/api/transactions/summary?date=${cutOffDate}`, { headers: { 'auth-token': token } })
+    // CAMBIO: Usar API_BASE_URL
+    fetch(`${API_BASE_URL}/api/transactions/summary?date=${cutOffDate}`, { headers: { 'auth-token': token } })
       .then(res => res.json())
       .then(data => setGlobalBalance(data.balance))
       .catch(err => console.error(err));
@@ -73,7 +78,8 @@ function App() {
 
   const refreshData = () => {
     if (!token) return;
-    const url = `http://localhost:4000/api/transactions?from=${dateRange.from}&to=${dateRange.to}`;
+    // CAMBIO: Usar API_BASE_URL
+    const url = `${API_BASE_URL}/api/transactions?from=${dateRange.from}&to=${dateRange.to}`;
     fetch(url, { headers: { 'auth-token': token } })
       .then(res => { if (res.status === 401) { handleLogout(); return []; } return res.json(); })
       .then(data => { if(Array.isArray(data)) setTransactions(data); })
@@ -87,7 +93,8 @@ function App() {
   const confirmDelete = async () => {
     if (!transactionToDelete) return;
     try {
-        const res = await fetch(`http://localhost:4000/api/transactions/${transactionToDelete}`, {
+        // CAMBIO: Usar API_BASE_URL
+        const res = await fetch(`${API_BASE_URL}/api/transactions/${transactionToDelete}`, {
             method: 'DELETE', headers: { 'auth-token': token }
         });
         if (res.ok) {
@@ -101,7 +108,8 @@ function App() {
   const handleTogglePaid = async (transaction) => {
     try {
         const updatedStatus = !transaction.isPaid;
-        const res = await fetch(`http://localhost:4000/api/transactions/${transaction._id}`, {
+        // CAMBIO: Usar API_BASE_URL
+        const res = await fetch(`${API_BASE_URL}/api/transactions/${transaction._id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'auth-token': token },
             body: JSON.stringify({ isPaid: updatedStatus }) 
@@ -121,6 +129,7 @@ function App() {
   const handleDeleteClick = (id) => { setTransactionToDelete(id); setIsDeleteModalOpen(true); }
   const handleDateChange = (e) => { setDateRange({ ...dateRange, [e.target.name]: e.target.value }) }
 
+  // CAMBIO: Pasar la API_URL al Login si es necesario, o que Login use la misma lógica
   if (!token) return <Login onLogin={handleLoginSuccess} />;
 
   // --- FILTRADO ---
@@ -130,12 +139,10 @@ function App() {
 
   return (
     <div className="bento-container">
-      
-      {/* 1. SIDEBAR */}
+      {/* ... (Resto del JSX igual que tu archivo original) ... */}
       <aside className="bento-box area-nav">
         <div>
           <h1 className="app-title">BlackLabs Systems</h1>
-          
           <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px'}}>
              <p className="user-greet" style={{marginBottom:0}}>
                 Bienvenido, <strong>{username}</strong> 👋
@@ -144,7 +151,6 @@ function App() {
                 Salir
              </button>
           </div>
-
           <div className="control-group">
             <button className="btn-bento-primary" onClick={handleNewClick}><span>+</span> Nueva Transacción</button>
           </div>
@@ -160,34 +166,28 @@ function App() {
         </div>
       </aside>
 
-      {/* 2. BALANCE */}
       <section className={`bento-box area-balance ${globalBalance < 0 ? 'balance-danger' : globalBalance > 0 ? 'balance-success' : ''}`}>
          <Balance transactions={transactions} globalBalance={globalBalance} />
       </section>
 
-      {/* 3. GRÁFICA PRINCIPAL CON LOGICA DE 4 VISTAS */}
       <section className="bento-box area-chart">
         <div className="box-header">
-           <h3>Análisis Visual</h3>
-           <div className="chart-toggle">
-              <button className={chartView === 'expense' ? 'active' : ''} onClick={() => setChartView('expense')}>Gastos</button>
-              <button className={chartView === 'income' ? 'active' : ''} onClick={() => setChartView('income')}>Ingresos</button>
-              <button className={chartView === 'comparison' ? 'active' : ''} onClick={() => setChartView('comparison')}>Comparación</button>
-              <button className={chartView === 'netflow' ? 'active' : ''} onClick={() => setChartView('netflow')}>Flujo Neto</button>
-
-           </div>
+            <h3>Análisis Visual</h3>
+            <div className="chart-toggle">
+               <button className={chartView === 'expense' ? 'active' : ''} onClick={() => setChartView('expense')}>Gastos</button>
+               <button className={chartView === 'income' ? 'active' : ''} onClick={() => setChartView('income')}>Ingresos</button>
+               <button className={chartView === 'comparison' ? 'active' : ''} onClick={() => setChartView('comparison')}>Comparación</button>
+               <button className={chartView === 'netflow' ? 'active' : ''} onClick={() => setChartView('netflow')}>Flujo Neto</button>
+            </div>
         </div>
-<div style={{ flex: 1, minHeight: 0 }}>
-   {chartView === 'expense' && <ExpenseChart transactions={transactions} type="gasto" />}
-   {chartView === 'comparison' && <ComparisonChart transactions={transactions} />}
-   {chartView === 'netflow' && <NetFlowChart transactions={transactions} />}
-   
-   {/* Si quieres ver el pastel de ingresos, así se debe ver: */}
-   {chartView === 'income' && <ExpenseChart transactions={transactions} type="ingreso" />}
-</div>
+        <div style={{ flex: 1, minHeight: 0 }}>
+           {chartView === 'expense' && <ExpenseChart transactions={transactions} type="gasto" />}
+           {chartView === 'comparison' && <ComparisonChart transactions={transactions} />}
+           {chartView === 'netflow' && <NetFlowChart transactions={transactions} />}
+           {chartView === 'income' && <ExpenseChart transactions={transactions} type="ingreso" />}
+        </div>
       </section>
 
-      {/* 4. ÁREA DE INSIGHTS DE IA */}
       {aiVisualData && (
         <section className="bento-box area-ai-visual">
           <div className="box-header">
@@ -198,15 +198,14 @@ function App() {
         </section>
       )}
 
-      {/* 5. HISTORIAL */}
       <section className="bento-box area-history">
         <div className="box-header">
-           <h3>Movimientos</h3>
-           <div className="history-tabs">
-              <button className={historyFilter === 'all' ? 'tab-active' : ''} onClick={() => setHistoryFilter('all')}>Todo</button>
-              <button className={historyFilter === 'ingreso' ? 'tab-active' : ''} onClick={() => setHistoryFilter('ingreso')}>Ingresos</button>
-              <button className={historyFilter === 'gasto' ? 'tab-active' : ''} onClick={() => setHistoryFilter('gasto')}>Gastos</button>
-           </div>
+            <h3>Movimientos</h3>
+            <div className="history-tabs">
+               <button className={historyFilter === 'all' ? 'tab-active' : ''} onClick={() => setHistoryFilter('all')}>Todo</button>
+               <button className={historyFilter === 'ingreso' ? 'tab-active' : ''} onClick={() => setHistoryFilter('ingreso')}>Ingresos</button>
+               <button className={historyFilter === 'gasto' ? 'tab-active' : ''} onClick={() => setHistoryFilter('gasto')}>Gastos</button>
+            </div>
         </div>
         
         <div className="transactions-feed">
@@ -247,7 +246,6 @@ function App() {
 
       <AiChat token={token} onVisualDataReceived={handleVisualData} />
 
-      {/* MODALES */}
       {isModalOpen && (
         <div className="modal-overlay" onClick={() => setIsModalOpen(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>

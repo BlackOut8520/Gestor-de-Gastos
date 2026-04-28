@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import './Login.css';
-// import './Login.css'; // Si tienes estilos, descomenta esto
+
+// --- CONFIGURACIÓN DE LA API ---
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 export const Login = ({ onLogin }) => {
   const [isRegistering, setIsRegistering] = useState(false);
@@ -14,7 +16,8 @@ export const Login = ({ onLogin }) => {
     const endpoint = isRegistering ? '/api/auth/register' : '/api/auth/login';
 
     try {
-      const res = await fetch(`http://localhost:4000${endpoint}`, {
+      // MODIFICACIÓN: Usamos API_BASE_URL en lugar de localhost fijo
+      const res = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -28,15 +31,8 @@ export const Login = ({ onLogin }) => {
         alert("¡Registro exitoso! Ahora inicia sesión.");
         setIsRegistering(false);
       } else {
-        // --- AQUÍ ESTÁ EL FIX ---
-        // 1. Guardamos el nombre en el navegador
-        // Nota: Si el backend manda data.user.username, úsalo. Si manda data.username, úsalo.
-        // Este código intenta ambas formas para asegurar que no falle.
         const nameToSave = data.username || (data.user && data.user.username) || 'Usuario';
-        
         localStorage.setItem('auth-user', nameToSave); 
-        
-        // 2. Avisamos a App.jsx que ya entramos
         onLogin(data.token);
       }
     } catch (err) {

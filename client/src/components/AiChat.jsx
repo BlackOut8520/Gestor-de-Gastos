@@ -1,27 +1,26 @@
 // client/src/components/AiChat.jsx
 import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
-import toast, { Toaster } from 'react-hot-toast'; // Notificaciones profesionales
+import toast, { Toaster } from 'react-hot-toast';
+
+// --- CONFIGURACIÓN DE LA API ---
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
 
 const AiChat = ({ token, onVisualDataReceived }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [pregunta, setPregunta] = useState('');
   const [cargando, setCargando] = useState(false);
   
-  // 1. historialIA: Memoria técnica para Gemini
   const [historialIA, setHistorialIA] = useState([]); 
-  
-  // 2. mensajesChat: Lo que el usuario ve en pantalla
   const [mensajesChat, setMensajesChat] = useState([]); 
-
-  // 3. Acción pendiente: Para guardar los datos del gasto/ingreso temporalmente
   const [accionPendiente, setAccionPendiente] = useState(null);
 
   // Cargar historial de MongoDB al abrir el chat
   useEffect(() => {
     const cargarHistorial = async () => {
       try {
-        const res = await fetch('http://localhost:4000/api/ai/history', {
+        // MODIFICACIÓN: Usar API_BASE_URL
+        const res = await fetch(`${API_BASE_URL}/api/ai/history`, {
           headers: { 'auth-token': token }
         });
         const data = await res.json();
@@ -51,7 +50,8 @@ const AiChat = ({ token, onVisualDataReceived }) => {
   // FUNCIÓN PARA EJECUTAR EL REGISTRO REAL EN DB
   const confirmarRegistro = async (payload) => {
     try {
-      const res = await fetch('http://localhost:4000/api/transactions', {
+      // MODIFICACIÓN: Usar API_BASE_URL
+      const res = await fetch(`${API_BASE_URL}/api/transactions`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -64,7 +64,7 @@ const AiChat = ({ token, onVisualDataReceived }) => {
         toast.success(`¡${payload.type === 'gasto' ? 'Gasto' : 'Ingreso'} registrado!`, {
           style: { borderRadius: '10px', background: '#333', color: '#fff' }
         });
-        setAccionPendiente(null); // Limpiar la tarjeta de confirmación
+        setAccionPendiente(null);
       }
     } catch (error) {
       toast.error("Error al guardar la transacción.");
@@ -79,10 +79,11 @@ const AiChat = ({ token, onVisualDataReceived }) => {
     setMensajesChat(prev => [...prev, { role: 'user', texto: preguntaActual }]);
     setPregunta('');
     setCargando(true);
-    setAccionPendiente(null); // Resetear acción al preguntar algo nuevo
+    setAccionPendiente(null);
 
     try {
-      const res = await fetch('http://localhost:4000/api/ai/chat', {
+      // MODIFICACIÓN: Usar API_BASE_URL
+      const res = await fetch(`${API_BASE_URL}/api/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,7 +101,6 @@ const AiChat = ({ token, onVisualDataReceived }) => {
         const respuestaTexto = data.respuesta.texto;
         setMensajesChat(prev => [...prev, { role: 'model', texto: respuestaTexto }]);
 
-        // SI HAY UNA ACCIÓN DE REGISTRO, LA GUARDAMOS EN EL ESTADO
         if (data.respuesta.action?.type === 'CONFIRM_TRANSACTION') {
           setAccionPendiente(data.respuesta.action.payload);
         }
@@ -120,6 +120,7 @@ const AiChat = ({ token, onVisualDataReceived }) => {
     }
   };
 
+  // ... (Resto del componente y estilos se mantienen iguales)
   return (
     <>
       <Toaster position="top-center" /> 
@@ -156,7 +157,6 @@ const AiChat = ({ token, onVisualDataReceived }) => {
               >
                 <ReactMarkdown>{msg.texto}</ReactMarkdown>
 
-                {/* TARJETA DE CONFIRMACIÓN (Solo si es el último mensaje y hay acción) */}
                 {index === mensajesChat.length - 1 && accionPendiente && (
                   <div style={styles.confirmCard}>
                     <div style={styles.confirmInfo}>
@@ -212,6 +212,7 @@ const AiChat = ({ token, onVisualDataReceived }) => {
   );
 };
 
+// ... (Los estilos permanecen iguales que en tu código original)
 const styles = {
   floatingButton: {
     position: 'fixed', bottom: '24px', right: '24px', backgroundColor: '#222222',
@@ -239,7 +240,6 @@ const styles = {
   spinner: {
     display: 'inline-block', width: '12px', height: '12px', border: '2px solid rgba(0,0,0,0.1)', borderTopColor: '#717171', borderRadius: '50%', animation: 'spin 1s linear infinite'
   },
-  // ESTILOS DE LA TARJETA DE CONFIRMACIÓN
   confirmCard: {
     marginTop: '10px', padding: '12px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
   },
